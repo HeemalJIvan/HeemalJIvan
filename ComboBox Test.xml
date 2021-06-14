@@ -1,0 +1,390 @@
+<?xml version="1.0" encoding="utf-8"?>
+<SynapseProcess>
+  <Name>File Manager 1.3</Name>
+  <Description>Combine Manage Files </Description>
+  <ReturnType>FluidProcessResponse</ReturnType>
+  <Category>File Management</Category>
+  <Script><![CDATA[{
+			string[] delimiters = new string[] { "|" };
+			string[] searchPatterns = SearchPatterns.Split(delimiters, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToArray();
+			if (Choice.IndexOf("||") != -1)
+			{
+				Choice = Choice.Substring(0, Choice.IndexOf("||"));
+			}
+			FileManager process = new FileManager(SourceDirectory, searchPatterns, Convert.ToBoolean(IncludeSubDirectories), TargetDirectory, Convert.ToBoolean(Overwrite), AppendText, Choice,NewName, Convert.ToBoolean(DateTimeStamp),this);
+			return process.Process();
+        }]]></Script>
+  <Version>1</Version>
+  <IsComposite>0</IsComposite>
+  <ScriptType>Synapse</ScriptType>	
+  <Classes>
+    <Class>
+    <Name>FileManager</Name>
+    <Description>FileManager</Description>
+	<Code><![CDATA[public class FileManager : ProcessBase
+	{
+		public string SourceDirectory { get; set; }
+		public string[] SearchPatterns { get; set; }
+		public bool IncludeSubDirectories { get; set; }
+		public string TargetDirectory { get; set; }
+		public bool Overwrite { get; set; }
+		public string AppendText { get; set; }
+		public string Choice { get; set; }
+		public string NewName { get; set; }
+		public bool DateTimeStamp { get; set; }
+				
+		public enum FileManagmentChoices
+		{
+			Copy = 1,
+			Move = 2
+		}				
+		public FileManager(string sourceDirectory, string[] searchPatterns, bool includeSubDirectories, string targetDirectory, bool overWrite, string appendText, string choice, string newName, bool dateTimeStamp, INeuron task) : base(task)
+		{
+			SourceDirectory = sourceDirectory;
+			SearchPatterns = searchPatterns;
+			IncludeSubDirectories = includeSubDirectories;
+			TargetDirectory = targetDirectory;
+			Overwrite = overWrite;
+			AppendText = appendText;
+			Choice = choice;
+			NewName = newName;
+			DateTimeStamp = dateTimeStamp;
+		}
+				
+		protected override FluidProcessResponse Execute()
+		{
+			LogInfo("Starting...");
+			if (choices == FileManagmentChoices.Copy)
+            {
+                LogInfo("Retrieving source files ...");
+                SearchOption searchOption = includeSubDirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+                string[] files = GetFiles(sourceDirectory, searchPatterns, searchOption);
+                LogInfo("{0} files retrieved.", files.Length);
+
+                LogInfo("Coping files ...");
+                foreach (string file in files)
+                {
+                    try
+                    {
+                        string directoryName = System.IO.Path.GetDirectoryName(file);
+                        string fileNameWithoutExtension = System.IO.Path.GetFileNameWithoutExtension(file);
+                        string extension = System.IO.Path.GetExtension(file);
+                        string timestamp = DateTime.Now.ToString("yyyyMMdd HH.mm.ss");
+                        string targetFileNameWithoutExtension = fileNameWithoutExtension + appendText;
+                        if (dateTimeStamp)
+                        {
+                            targetFileNameWithoutExtension += timestamp;
+                        }
+                        string targetFileName = targetFileNameWithoutExtension + extension;
+                        string targetFile = System.IO.Path.Combine(targetDirectory, targetFileName);
+                        string targetPath = System.IO.Path.Combine(targetDirectory, targetFile);
+
+                        if (!File.Exists(targetPath))
+                        {
+                            if (overWrite)
+                            {
+                                string oldpath = file;
+                                string newpath = targetDirectory;
+                                string newfilename = fileNameWithoutExtension + " " + "(" + NewName + ")";
+                                FileInfo f1 = new FileInfo(oldpath);
+                                targetFileNameWithoutExtension = newfilename + appendText;
+                                if (dateTimeStamp)
+                                {
+                                    targetFileNameWithoutExtension += timestamp;
+                                }
+
+                                string copyToPath = string.Format("{0}\\{1}{2}", newpath, targetFileNameWithoutExtension, f1.Extension);
+
+                                if (f1.Exists)
+                                {
+                                    f1.CopyTo(copyToPath);
+                                }
+                            }
+                            else
+                            {
+                                string oldpath = file;
+                                string newpath = targetDirectory;
+                                string newfilename = fileNameWithoutExtension + " " + "(" + NewName + ")";
+
+                                FileInfo f1 = new FileInfo(oldpath);
+                                targetFileNameWithoutExtension = newfilename + appendText;
+                                if (dateTimeStamp)
+                                {
+                                    targetFileNameWithoutExtension += timestamp;
+                                }
+                                int count = 1;
+                                string newFullPath = file;
+                                while (File.Exists(newFullPath))
+                                {
+                                    string tempFileName = string.Format("{0}({1})", fileNameWithoutExtension, count++);
+                                    newFullPath = Path.Combine(newpath, tempFileName + f1.Extension);
+                                }
+                                if (f1.Exists)
+                                {
+                                    f1.CopyTo(newFullPath);
+                                }
+                                LogWarning("Overwrite set to false. Path {0}", targetPath);
+                            }
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        LogError(e.Message, e);
+                    }
+                }
+                LogInfo("Files Copied.");
+            }
+
+			else  if (choices == FileManagmentChoices.Move)
+            {
+                LogInfo("Retrieving source files ...");
+                SearchOption searchOption = includeSubDirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+                string[] files = GetFiles(sourceDirectory, searchPatterns, searchOption);
+                LogInfo("{0} files retrieved.", files.Length);
+
+                LogInfo("Coping files ...");
+                foreach (string file in files)
+                {
+                    try
+                    {
+                        string directoryName = System.IO.Path.GetDirectoryName(file);
+                        string fileNameWithoutExtension = System.IO.Path.GetFileNameWithoutExtension(file);
+                        string extension = System.IO.Path.GetExtension(file);
+                        string timestamp = DateTime.Now.ToString("yyyyMMdd HH.mm.ss");
+                        string targetFileNameWithoutExtension = fileNameWithoutExtension + appendText;
+                        if (dateTimeStamp)
+                        {
+                            targetFileNameWithoutExtension += timestamp;
+                        }
+                        string targetFileName = targetFileNameWithoutExtension + extension;
+                        string targetFile = System.IO.Path.Combine(targetDirectory, targetFileName);
+                        string targetPath = System.IO.Path.Combine(targetDirectory, targetFile);
+
+                        if (File.Exists(targetPath))
+                        {
+                            if (overWrite)
+                            {
+                                string oldpath = file;
+                                string newpath = targetDirectory;
+                                string newfilename = fileNameWithoutExtension + " " + "(" + NewName + ")";
+                                FileInfo orignalPath = new FileInfo(oldpath);
+                                targetFileNameWithoutExtension = newfilename + appendText;
+                                if (dateTimeStamp)
+                                {
+                                    targetFileNameWithoutExtension += timestamp;
+                                }
+
+                                string moveToPath = string.Format("{0}\\{1}{2}", newpath, targetFileNameWithoutExtension, orignalPath.Extension);
+
+                                if (orignalPath.Exists)
+                                {
+
+                                    orignalPath.MoveTo(moveToPath);
+                                    File.Delete(oldpath);
+                                }
+                            }
+                            else
+                            {
+                                string oldpath = file;
+                                string newpath = targetDirectory;
+                                string newfilename = targetFileNameWithoutExtension + newName;
+                                FileInfo orignalPath = new FileInfo(oldpath);
+                                targetFileNameWithoutExtension = newfilename + appendText;
+                                if (dateTimeStamp)
+                                {
+                                    targetFileNameWithoutExtension += timestamp;
+                                }
+                                int count = 1;
+                                string newFullPath = file;
+                                while (File.Exists(newFullPath))
+                                {
+                                    string tempFileName = string.Format("{0}({1})", fileNameWithoutExtension, count++);
+                                    newFullPath = Path.Combine(newpath, tempFileName + orignalPath.Extension);
+                                }
+
+                                if (orignalPath.Exists)
+                                {
+                                    orignalPath.MoveTo(newFullPath);
+                                    File.Delete(oldpath);
+                                }
+                                LogWarning("Overwrite set to false. Path {0}", targetPath);
+                            }
+                        }
+                        else
+                        {
+                            File.Move(file, targetPath);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                       LogError(e.Message, e);
+                    }
+                }
+                LogInfo("Files Copied.");
+            }
+			return FluidProcessResponse.Pass();
+			
+			private string[] GetFiles(string path, string[] searchPatterns, SearchOption searchOption)
+			{
+				List<string> list = new List<string>();
+				foreach (string searchPattern in searchPatterns)
+				{
+					string[] files = Directory.GetFiles(path, searchPattern, searchOption);
+					list.AddRange(files);
+				}
+				return list.ToArray();
+			}
+		}
+	}]]></Code>
+	    </Class>
+	    </Classes>
+   <Assemblies>
+    <Assembly>
+      <Name>Fluid.Business.ProcessLib</Name>
+      <Description>Fluid.Business.ProcessLib</Description>
+      <Statement>Fluid.Business.ProcessLib.dll</Statement>
+    </Assembly>
+    <Assembly>
+      <Name>Fluid.Business.DataServer</Name>
+      <Description>Fluid.Business.DataServer</Description>
+      <Statement>Fluid.Business.DataServer.dll</Statement>
+    </Assembly>
+    <Assembly>
+      <Name>FusionXC.Data</Name>
+      <Description>FusionXC.Data</Description>
+      <Statement>FusionXC.Data.dll</Statement>
+    </Assembly>
+    <Assembly>
+      <Name>System.Data</Name>
+      <Description>System.Data</Description>
+      <Statement>System.Data.dll</Statement>
+    </Assembly>
+    <Assembly>
+      <Name>System.Data.DataSetExtensions</Name>
+      <Description>System.Data.DataSetExtensions</Description>
+      <Statement>System.Data.DataSetExtensions.dll</Statement>
+    </Assembly>
+    <Assembly>
+      <Name>System.Xml</Name>
+      <Description>System.Xml</Description>
+      <Statement>System.Xml.dll</Statement>
+    </Assembly>
+    <Assembly>
+      <Name>System.Xml.Linq</Name>
+      <Description>System.Xml.Linq</Description>
+      <Statement>System.Xml.Linq.dll</Statement>
+    </Assembly>
+  </Assemblies>
+  <Usings>
+    <Using>
+      <Name>Fluid.Business.DataServer.Models</Name>
+      <Description>Fluid.Business.DataServer.Models</Description>
+      <Statement>Fluid.Business.DataServer.Models</Statement>
+    </Using>
+    <Using>
+      <Name>Fluid.Business.ProcessLib.Processes</Name>
+      <Description>Fluid.Business.ProcessLib.Processes</Description>
+      <Statement>Fluid.Business.ProcessLib.Processes</Statement>
+    </Using>
+    <Using>
+      <Name>System</Name>
+      <Description>System</Description>
+      <Statement>System</Statement>
+    </Using>
+    <Using>
+      <Name>System.Collections.Generic</Name>
+      <Description>System.Collections.Generic</Description>
+      <Statement>System.Collections.Generic</Statement>
+    </Using>
+    <Using>
+      <Name>System.IO</Name>
+      <Description>System.IO</Description>
+      <Statement>System.IO</Statement>
+    </Using>
+    <Using>
+      <Name>System.Linq</Name>
+      <Description>System.Linq</Description>
+      <Statement>System.Linq</Statement>
+    </Using>
+    <Using>
+      <Name>System.Text</Name>
+      <Description>System.Text</Description>
+      <Statement>System.Text</Statement>
+    </Using>
+    <Using>
+      <Name>System.Threading.Tasks</Name>
+      <Description>System.Threading.Tasks</Description>
+      <Statement>System.Threading.Tasks</Statement>
+    </Using>
+  </Usings>
+  <Properties>
+    <Property>
+		<Name>Choice</Name>
+		<Description>Copy,Move,Rename</Description>
+		<DataType>System.String</DataType>
+		<EditorType> {"ItemsDatabase":"Master","EditorType":"comboBox","ItemsQuery":"select 'Move'[Name], 'Move'[Id] union select 'Copy'[Name], 'Copy'[Id]"} </EditorType>
+		<DefaultValue />
+		<IsRuntime>0</IsRuntime>
+	</Property>
+    <Property>
+      <Name>SourceDirectory</Name>
+      <Description>Source directory to move files from.</Description>
+      <DataType>System.String</DataType> 
+      <DefaultValue />
+      <IsRuntime>0</IsRuntime>
+    </Property>
+	<Property>
+      <Name>TargetDirectory</Name>
+      <Description>The target directory to move matching files to.</Description>
+      <DataType>System.String</DataType>
+      <DefaultValue />
+      <IsRuntime>0</IsRuntime>
+    </Property>
+    <Property>
+      <Name>SearchPatterns</Name>
+      <Description>Search patterns to use to find files to move.</Description>
+      <DataType>System.String</DataType>
+      <DefaultValue>*.*</DefaultValue>
+      <IsRuntime>0</IsRuntime>
+    </Property>
+	<Property>
+      <Name>IncludeSubDirectories</Name>
+      <Description>Indicator to determine if sub directories should be included in the search.</Description>
+      <DataType>System.Boolean</DataType>
+	  <EditorType> {"ItemsDatabase":"Master","EditorType":"comboBox","ItemsQuery":"select 'true'[Name], 'true'[Id] union select 'false'[Name], 'false'[Id]"} </EditorType>
+      <DefaultValue />
+      <IsRuntime>0</IsRuntime>
+    </Property>
+    <Property>
+      <Name>Overwrite</Name>
+      <Description>Should the target file be overwritten if a file with the same name exists or should the file not be moved.</Description>
+      <DataType>System.Boolean</DataType>
+	  <EditorType> {"ItemsDatabase":"Master","EditorType":"comboBox","ItemsQuery":"select 'true'[Name], 'true'[Id] union select 'false'[Name], 'false'[Id]"}</EditorType>
+      <DefaultValue />
+      <IsRuntime>0</IsRuntime>
+    </Property>
+	<Property>
+		<Name>NewName</Name>
+		<Description>Rename</Description>
+		<DataType>System.String</DataType>
+		<DefaultValue></DefaultValue>
+		<IsRuntime>0</IsRuntime>
+	</Property>
+	 <Property>
+      <Name>AppendText</Name>
+      <Description>The text to append before the timestamp.</Description>
+      <DataType>System.String</DataType>
+      <DefaultValue>   -  </DefaultValue>
+      <IsRuntime>0</IsRuntime>
+    </Property>
+    <Property>
+      <Name>DateTimeStamp</Name>
+      <Description>The date time format to use for the timestamp.</Description>
+      <DataType>System.Boolean </DataType>
+	  <EditorType>{"ItemsDatabase":"Master","EditorType":"comboBox","ItemsQuery":"select 'true'[Name], 'true'[Id] union select 'false'[Name], 'false'[Id]"}</EditorType> 
+      <DefaultValue />
+      <IsRuntime>0</IsRuntime>
+    </Property>
+  </Properties>
+  <DataSources />
+</SynapseProcess>
