@@ -1,0 +1,24 @@
+﻿<Window x:Class="iCompare_Installer.iCompareSetup"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:iCompare_Installer"
+        mc:Ignorable="d"
+        Title="iCompare Wizard" Height="215.375" Width="782.5">
+    <Grid Margin="0,0,2,16">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="155*"/>
+            <ColumnDefinition Width="3*"/>
+        </Grid.ColumnDefinitions>
+        <Button Name="BtnBack" Content="Back" HorizontalAlignment="Left" Margin="433,140,0,0" VerticalAlignment="Top" Width="76" Click="BtnBack_Click" BorderBrush="#FF4FBB85" Background="#FFBD5959" FontFamily="Tahoma" FontWeight="Bold"/>
+        <Button Name="BtnNext" Content="Next" HorizontalAlignment="Left" Margin="548,140,0,0" VerticalAlignment="Top" Width="75" Click="BtnNext_Click" BorderBrush="#FF4FBB85" Background="#FFBD5959" FontFamily="Tahoma" FontWeight="Bold"/>
+        <Button Name="BtnCancel" Content="Cancel" HorizontalAlignment="Left" Margin="660,140,0,0" VerticalAlignment="Top" Width="75" Click="BtnCancel_Click" BorderBrush="#FF4FBB85" Background="#FFBD5959" FontFamily="Tahoma" FontWeight="Bold"/>
+        <GroupBox Header="Scheduler console" HorizontalAlignment="Left" Height="101" Margin="20,24,0,0" VerticalAlignment="Top" Width="717" Background="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}" BorderBrush="#FF0B4466" FontFamily="Tahoma" FontWeight="Bold">
+            <Button Name="btnRetrieve" Content="retrieve" HorizontalAlignment="Left" Margin="632,19,-2,0" VerticalAlignment="Top" Width="75" Click="btnRetrieve_Click_1" Background="#FFBD5959"/>
+        </GroupBox>
+        <Label Content="Master Database Connection String:" HorizontalAlignment="Left" Margin="20,53,0,0" VerticalAlignment="Top" FontFamily="Tahoma" FontWeight="Bold" FontSize="10"/>
+        <TextBox  Name="txtConnectionString" HorizontalAlignment="Left" Height="26" Margin="210,52,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="443" FontFamily="Tahoma" FontWeight="Bold" Background="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"/>
+
+    </Grid>
+</Window>
